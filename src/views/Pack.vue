@@ -22,7 +22,7 @@
                     <v-data-table
                         :headers="[
                             { text: 'Name', value: 'name' },
-                            { text: 'Size', value: 'size' }, 
+                            { text: 'Size', value: 'size' },
                             { text: 'Type', value: 'type' },
                             { text: 'Action', value: 'name', align: 'right', sortable: false }
                         ]"
@@ -39,14 +39,14 @@
                                 <td class="text-xs-right">
                                     <v-btn small flat color="error" @click.stop="deleteItem(props.item, 'library')" v-if="props.item.type !== 'MOJANG'">DELETE</v-btn>
                                     <v-btn small flat color="warning" @click.stop="toggleEnable(props.item, 'library')">{{ isDesalbed(props.item, 'library') ? 'ENABLE' : 'DISABLE' }}</v-btn>
-                                    
+
                                 </td>
                             </tr>
                         </template>
                         <template slot="expand" slot-scope="props">
                             <div class="pa-3 subheading" style=" background-color: #212121">
                                 <ul>
-                                    <li>Url: <a :href="props.item.downloads.artifact.url">{{ props.item.downloads.artifact.url }}</a></li>
+                                    <li>Url: <a :href="props.item.type === 'CUSTOM' ? api_url + props.item.downloads.artifact.url : props.item.downloads.artifact.url">{{ props.item.downloads.artifact.url }}</a></li>
                                     <li>Checksum: {{ props.item.downloads.artifact.sha1 }}</li>
                                     <li>Path: {{ props.item.downloads.artifact.path }}</li>
                                 </ul>
@@ -60,7 +60,7 @@
                     <v-data-table
                         :headers="[
                             { text: 'Name', value: 'name' },
-                            { text: 'Type', value: 'type' }  
+                            { text: 'Type', value: 'type' }
                         ]"
                         :items="natives"
                         hide-actions
@@ -77,7 +77,7 @@
                             <div
                                 v-for="(n, i) in props.item.natives"
                                 :key="i"
-                                class="pa-3 subheading" 
+                                class="pa-3 subheading"
                                 style=" background-color: #212121"
                             >
                                 {{ n.name }}
@@ -97,7 +97,7 @@
                     <v-data-table
                         :headers="[
                             { text: 'Name', value: 'name' },
-                            { text: 'Size', value: 'size' }, 
+                            { text: 'Size', value: 'size' },
                             { text: 'Action', value: 'name', align: 'right', sortable: false }
                         ]"
                         :items="files"
@@ -118,7 +118,7 @@
                         <template slot="expand" slot-scope="props">
                             <div class="pa-3 subheading" style=" background-color: #212121">
                                 <ul>
-                                    <li>Url: <a :href="props.item.downloads.artifact.url">{{ props.item.downloads.artifact.url }}</a></li>
+                                    <li>Url: <a :href="props.item.type === 'CUSTOM' ? api_url + props.item.downloads.artifact.url : props.item.downloads.artifact.url">{{ props.item.downloads.artifact.url }}</a></li>
                                     <li>Checksum: {{ props.item.downloads.artifact.sha1 }}</li>
                                     <li>Path: {{ props.item.downloads.artifact.path }}</li>
                                 </ul>
@@ -148,6 +148,15 @@
                                     <v-textarea
                                         label="Arguments"
                                         v-model="pack.args"
+                                    ></v-textarea>
+                                </v-flex>
+                                <v-flex xs4>
+                                    <v-subheader>Additonal JVM Arguments</v-subheader>
+                                </v-flex>
+                                <v-flex xs8>
+                                    <v-textarea
+                                        label="JVM Arguments"
+                                        v-model="pack.jvmArgs"
                                     ></v-textarea>
                                 </v-flex>
                             </v-layout>
@@ -231,6 +240,7 @@ export default {
             building: false,
             uploading: false,
             form: {},
+            api_url: process.env.API_URL.substring(0, process.env.API_URL.length - 1),
             tabs: [ "Libraries", "Natives", "Files", "Arguments"]
         }
     },
@@ -279,7 +289,7 @@ export default {
             updatePack: 'packs/updatePack',
             upload: 'packs/upload',
             delFile: 'packs/delFile',
-            desableFile: 'packs/desableFile',
+            disableFile: 'packs/disableFile',
             build: 'packs/build',
             settingsPack: 'packs/settingsPack',
         }),
@@ -295,13 +305,13 @@ export default {
                 this.delFile({ id: this.pack.id, type, name })
         },
         toggleEnable({ name }, type) {
-            let desable = this.isDesalbed({ name }, type);
-            console.log(desable);
-            desable = !desable;
-            this.desableFile({ id: this.pack.id, name, type, desable })
+            let disable = this.isDesalbed({ name }, type);
+            console.log(disable);
+            disable = !disable;
+            this.disableFile({ id: this.pack.id, name, type, disable })
         },
         isDesalbed({ name }, type) {
-            return this.pack.desabled && !!this.pack.desabled.find(({ type: t, name: n }) => name == n && type == t)
+            return this.pack.disabled && !!this.pack.disabled.find(({ type: t, name: n }) => name == n && type == t)
         },
         fileSet(file) {
             this.form.file = file;
@@ -314,7 +324,7 @@ export default {
         },
         saveSettings() {
             const mainClass = this.pack.mainClass || this.pack.data.mainClass;
-            this.settingsPack({ id: this.pack.id, mainClass, args: this.pack.args })
+            this.settingsPack({ id: this.pack.id, mainClass, args: this.pack.args, jvmArgs: this.pack.jvmArgs })
         },
         save() {
             const { name, type, file } = this.form;
@@ -323,7 +333,7 @@ export default {
             switch (type) {
                 case 'library':
                     const { pkg, version } = this.form;
-                    
+
                     if (!name || !pkg || !version || name == '' || pkg == '' ||  version == '') {
                         return this.$notify({ group: 'main', title: 'Error', type: 'error', text: 'Empty fields'})
                     } else if (!file || file == '') {

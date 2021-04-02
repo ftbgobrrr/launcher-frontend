@@ -31,10 +31,10 @@ const actions = {
             return packs
         })
     },
-    settingsPack({ commit }, { id, mainClass, args }) {
+    settingsPack({ commit }, { id, mainClass, args, jvmArgs }) {
         return vuex.dispatch('api/send', {
             path: `packs/pack/settings`,
-            data: { id, mainClass, args },
+            data: { id, mainClass, args, jvmArgs },
         }).then(pack => {
             if (pack) {
                 Vue.notify({ group: 'main', title: "Success !", type: 'success', text: 'Settings updated!'})
@@ -140,14 +140,14 @@ const actions = {
             return file;
         })
     },
-    desableFile({ commit }, { id, type, name, desable }) {
+    disableFile({ commit }, { id, type, name, disable }) {
         return vuex.dispatch('api/send', {
-            path: 'packs/pack/desable',
-            data: { id, type, name, desable }
+            path: 'packs/pack/disable',
+            data: { id, type, name, disable }
         }).then((file) => {
             if (file) {
-                commit('desable_file', { id, type, name, desable })
-                Vue.notify({ group: 'main', title: "Success !", type: 'success', text: `File has been ${desable ? 'desabled': 'enabled'}`})
+                commit('disable_file', { id, type, name, disable })
+                Vue.notify({ group: 'main', title: "Success !", type: 'success', text: `File has been ${disable ? 'disabled': 'enabled'}`})
             }
             return file;
         })
@@ -197,17 +197,17 @@ const mutations = {
             pack.files.push(artifact);
         }
     },
-    desable_file(state, { id: packid, type, name, desable }) {
+    disable_file(state, { id: packid, type, name, disable }) {
         const pack = state.packs.find(({ id }) => id == packid);
-        if (!pack.desabled)
-            Vue.set(pack, 'desabled', []);
+        if (!pack.disabled)
+            Vue.set(pack, 'disabled', []);
 
-        if (desable == true)
-            pack.desabled.push({ name, type })
+        if (disable == true)
+            pack.disabled.push({ name, type })
         else {
-            pack.desabled.forEach(({ name: n, type: t }, key) => {
+            pack.disabled.forEach(({ name: n, type: t }, key) => {
                 if (n == name && type == t) {
-                    pack.desabled.splice(key, 1)
+                    pack.disabled.splice(key, 1)
                     return
                 }
             });
